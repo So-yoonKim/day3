@@ -6,10 +6,17 @@
     <title>제주 여행 에이전트</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <style>
-        #map { height: 360px; margin-top: 16px; border-radius: 16px; border: 2px solid #f6c667; }
+        #layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+        #right { position: sticky; top: 16px; }
+        #map { height: calc(100vh - 100px); min-height: 360px; border-radius: 16px; border: 2px solid #f6c667; }
+        @media (max-width: 800px) {  /* 좁은 화면(휴대폰)에서는 위아래로 */
+            #layout { grid-template-columns: 1fr; }
+            #right { position: static; }
+            #map { height: 360px; }
+        }
         #mapnote { font-size: 13px; color: #555; margin-top: 4px; }
         html { background: #e8f5d0; }  /* 페이지 전체: 연한 연두색 */
-        body { max-width: 640px; margin: 0 auto; padding: 16px; font-family: sans-serif; background: #e8f5d0; font-weight: 700; color: #e8710a; }
+        body { max-width: 1200px; margin: 0 auto; padding: 16px; font-family: sans-serif; background: #e8f5d0; font-weight: 700; color: #e8710a; }
         h2 { color: #e8710a; }
         /* 박스: 크림색 + 둥근 모서리 + 두꺼운 주황 글씨 */
         textarea, #answer, details {
@@ -26,14 +33,20 @@
     </style>
 </head>
 <body>
+    <div id="layout">
+    <div id="left">
     <h2>🍊 제주 여행 에이전트</h2>
     <textarea id="q" placeholder="예) 내일 동쪽에서 반나절 놀 곳 추천해줘"></textarea>
     <button id="ask"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="8.5" fill="#ff9f1a"/><path d="M12 5c0-2 1.5-3 3.5-3-.3 2-1.5 3-3.5 3z" fill="#4caf50"/></svg>물어보기</button>
     <div id="answer"></div>
     <details id="steps" hidden><summary>생각 과정 보기</summary><ul id="list"></ul></details>
+    </div>
 
+    <div id="right">
     <div id="map"></div>
     <div id="mapnote">질문하면 에이전트가 찾은 장소가 지도에 표시돼요 (위치는 지역 중심 근처의 대략적인 표시)</div>
+    </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
