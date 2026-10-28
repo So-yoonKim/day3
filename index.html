@@ -18,7 +18,7 @@
         }
         textarea { width: 100%; height: 70px; box-sizing: border-box; padding: 10px; font-size: 16px; font-family: inherit; }
         textarea::placeholder { color: #f0a050; }
-        button { padding: 8px 18px; font-size: 16px; margin-top: 8px; background: #ff9f1a; color: #fff; font-weight: 700; border: none; border-radius: 999px; cursor: pointer; }
+        button { padding: 8px 18px; font-size: 16px; margin-top: 8px; background: #fff3a8; color: #e8710a; font-weight: 700; border: 2px solid #f6c667; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
         #answer { white-space: pre-wrap; margin-top: 16px; padding: 12px; }
         details { margin-top: 12px; padding: 8px 12px; }
         #mapnote { color: #e8710a; }
@@ -28,7 +28,7 @@
 <body>
     <h2>🍊 제주 여행 에이전트</h2>
     <textarea id="q" placeholder="예) 내일 동쪽에서 반나절 놀 곳 추천해줘"></textarea>
-    <button id="ask">🍊 물어보기</button>
+    <button id="ask"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="8.5" fill="#ff9f1a"/><path d="M12 5c0-2 1.5-3 3.5-3-.3 2-1.5 3-3.5 3z" fill="#4caf50"/></svg>물어보기</button>
     <div id="answer"></div>
     <details id="steps" hidden><summary>생각 과정 보기</summary><ul id="list"></ul></details>
 
