@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // key 100개, 각 배열 길이는 100~200 사이 랜덤 (key마다 다름)
+        let data ={}
+        for (let i = 1; i <= 100; i++) {
+            const len = 100 + Math.floor(Math.random() * 101)
+            data["a"+i] = Array.from({length: len}, () => Math.floor(Math.random() * 1000))
+        }
+let v= Array.from({length: 100}, (_, i) => i + 1)   // [1, 2, ..., 100]
+        const show = (id)=> console.log(id+" 을 보여줘")
+         for (const i of v) {
+            for (const element of data["a"+i]) {
+                console.log(element+"\n")
+                show(element)
+            }
+    
+        }
+        
+    </script>
+</body>
+</html>

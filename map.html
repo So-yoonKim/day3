@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제주 관광지 지도</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        body { margin: 0; font-family: sans-serif; }
+        #bar { padding: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #f3f4f6; }
+        #map { height: calc(100vh - 90px); }
+        #msg { padding: 4px 10px; font-size: 14px; color: #444; height: 22px; }
+    </style>
+</head>
+<body>
+    <div id="bar">
+        <label>지역
+            <select id="area">
+                <option>동쪽</option>
+                <option>서쪽</option>
+                <option>서귀포</option>
+                <option>제주시</option>
+            </select>
+        </label>
+        <label>실내/야외
+            <select id="indoor">
+                <option value="">전체</option>
+                <option value="true">실내</option>
+                <option value="false">야외</option>
+            </select>
+        </label>
+        <button id="go">지도에 표시</button>
+    </div>
+    <div id="msg"></div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // jeju_spots.json 에는 좌표가 없어서, 세부 지역의 중심 근처에 흩뿌려 표시합니다 (정확한 위치 아님)
+        const CENTER = {
+            "동쪽(성산)": [33.4585, 126.9400],
+            "동쪽(구좌)": [33.5240, 126.8400],
+            "서쪽(한림)": [33.4150, 126.2650],
+            "서쪽(안덕)": [33.2600, 126.3600],
+            "제주시":     [33.5000, 126.5300],
+            "서귀포":     [33.2530, 126.5600],
+        }
+
+        // 이름으로 항상 같은 값(0~1)을 만들어, 새로고침해도 마커 위치가 안 바뀌게 함
+        const hash = (text, salt) => {
+            let h = salt
+            for (const ch of text) h = (h * 31 + ch.charCodeAt(0)) % 1000
+            return h / 1000
+        }
+
+        const map = L.map("map").setView([33.38, 126.55], 10)
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors",
+        }).addTo(map)
+        const layer = L.layerGroup().addTo(map)
+
+        const show = async () => {
+            const area = document.getElementById("area").value
+            const indoor = document.getElementById("indoor").value
+            const msg = document.getElementById("msg")
+            layer.clearLayers()
+            msg.textContent = "찾는 중..."
+
+            const res = await fetch(`/api/find-spots?area=${encodeURIComponent(area)}&indoor=${indoor}`)
+            const result = await res.json()
+            if (!result.ok) { msg.textContent = result.note; return }
+
+            const points = []
+            for (const spot of result.spots) {
+                const [lat, lng] = CENTER[spot.area]
+                const pos = [lat + (hash(spot.name, 7) - 0.5) * 0.06, lng + (hash(spot.name, 13) - 0.5) * 0.06]
+                points.push(pos)
+                L.marker(pos).addTo(layer).bindPopup(
+                    `<b>${spot.name}</b><br>${spot.area} · ${spot.indoor ? "실내" : "야외"}<br>${spot.description}`
+                )
+            }
+            if (points.length) map.fitBounds(points, { padding: [40, 40] })
+            msg.textContent = `${result.total}곳 중 ${result.spots.length}곳 표시 · 위치는 지역 중심 근처의 대략적인 표시입니다`
+        }
+
+        document.getElementById("go").addEventListener("click", show)
+    </script>
+</body>
+</html>
