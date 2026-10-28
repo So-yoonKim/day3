@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제주 여행 에이전트</title>
+    <style>
+        body { max-width: 640px; margin: 0 auto; padding: 16px; font-family: sans-serif; }
+        textarea { width: 100%; height: 70px; box-sizing: border-box; padding: 8px; font-size: 16px; }
+        button { padding: 8px 16px; font-size: 16px; margin-top: 8px; }
+        #answer { white-space: pre-wrap; margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 8px; }
+        details { margin-top: 12px; }
+        .find { color: #2563eb; } .judge { color: #7c3aed; }
+    </style>
+</head>
+<body>
+    <h2>제주 여행 에이전트</h2>
+    <textarea id="q" placeholder="예) 내일 동쪽에서 반나절 놀 곳 추천해줘"></textarea>
+    <button id="ask">물어보기</button>
+    <div id="answer"></div>
+    <details id="steps" hidden><summary>생각 과정 보기</summary><ul id="list"></ul></details>
+
+    <script>
+        const ask = async () => {
+            const answer = document.getElementById("answer")
+            const steps = document.getElementById("steps")
+            const list = document.getElementById("list")
+            answer.textContent = "생각 중..."
+            steps.hidden = true
+            list.innerHTML = ""
+
+            const res = await fetch("/api/agent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: document.getElementById("q").value }),
+            })
+            const data = await res.json()
+            if (data.error) { answer.textContent = "오류: " + data.error; return }
+
+            answer.textContent = (data.mode === "practice" ? "[" + (data.note || "연습 모드 — Gemini 키 없음") + "]\n" : "") + data.answer
+            for (const s of data.steps) {
+                const li = document.createElement("li")
+                li.className = s.kind
+                li.textContent = s.text
+                list.appendChild(li)
+            }
+            steps.hidden = false
+        }
+        document.getElementById("ask").addEventListener("click", ask)
+    </script>
+</body>
+</html>

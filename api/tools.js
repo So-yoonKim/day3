@@ -33,7 +33,44 @@ const find_spots = ({ area, indoor } = {}) => {
   };
 };
 
-// Claude Messages API 의 tools 에 그대로 넘기는 도구 설명
+// Open-Meteo 로 지역의 오늘/내일 예보를 가져온다 (키 없음)
+const AREA_POINT = {
+  동쪽: [33.4585, 126.94],
+  서쪽: [33.415, 126.265],
+  서귀포: [33.253, 126.56],
+  제주시: [33.5, 126.53],
+};
+
+const get_weather = async ({ area, day } = {}) => {
+  if (!AREA_POINT[area] || !['오늘', '내일'].includes(day)) {
+    return { ok: false, note: 'area 는 동쪽 · 서쪽 · 서귀포 · 제주시, day 는 오늘 · 내일 이어야 해요' };
+  }
+  const [lat, lon] = AREA_POINT[area];
+  const url =
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    '&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min' +
+    '&timezone=Asia%2FSeoul&forecast_days=2';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    const d = (await res.json()).daily;
+    const i = day === '오늘' ? 0 : 1;
+    return {
+      ok: true,
+      area,
+      day,
+      date: d.time[i],
+      rain_probability: d.precipitation_probability_max[i],
+      temp_max: d.temperature_2m_max[i],
+      temp_min: d.temperature_2m_min[i],
+      source: 'Open-Meteo 예보',
+    };
+  } catch (e) {
+    return { ok: false, note: '날씨를 가져오지 못했어요' };
+  }
+};
+
+// 도구 설명 (name · description · input_schema)
 const toolDefinitions = [
   {
     name: 'find_spots',
@@ -57,11 +94,45 @@ const toolDefinitions = [
       required: ['area'],
     },
   },
+  {
+    name: 'get_weather',
+    description:
+      'Open-Meteo 예보로 제주 지역의 오늘 또는 내일 강수확률(%) · 최고/최저 기온을 알려준다. ' +
+      '실패하면 ok:false 를 돌려주니, 그때는 날씨를 모른다고 말하고 숫자를 지어내지 않는다.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        area: { type: 'string', enum: AREAS, description: '날씨를 볼 지역' },
+        day: { type: 'string', enum: ['오늘', '내일'], description: '볼 날짜' },
+      },
+      required: ['area', 'day'],
+    },
+  },
 ];
 
-// 도구 이름으로 실행
-const tools = { find_spots };
-const runTool = (name, input) =>
+// Gemini 는 type 을 대문자(OBJECT, STRING ...)로 받는다 → 같은 설명을 Gemini 모양으로 바꿈
+const upperTypes = (schema) => {
+  const out = { ...schema, type: schema.type.toUpperCase() };
+  if (schema.properties) {
+    out.properties = Object.fromEntries(
+      Object.entries(schema.properties).map(([k, v]) => [k, upperTypes(v)])
+    );
+  }
+  return out;
+};
+const geminiTools = [
+  {
+    functionDeclarations: toolDefinitions.map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: upperTypes(t.input_schema),
+    })),
+  },
+];
+
+// 도구 이름으로 실행 (get_weather 가 비동기라 항상 await 로 부른다)
+const tools = { find_spots, get_weather };
+const runTool = async (name, input) =>
   tools[name] ? tools[name](input) : { ok: false, note: `알 수 없는 도구: ${name}` };
 
-module.exports = { find_spots, toolDefinitions, runTool };
+module.exports = { find_spots, get_weather, toolDefinitions, geminiTools, runTool };
