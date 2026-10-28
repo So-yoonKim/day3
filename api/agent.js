@@ -54,6 +54,7 @@ async function callGemini(contents) {
 async function runGemini(question) {
   const contents = [{ role: 'user', parts: [{ text: question }] }];
   const steps = [];
+  const spots = []; // find_spots 가 찾은 장소 — 지도에 표시한다
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const data = await callGemini(contents);
@@ -63,7 +64,7 @@ async function runGemini(question) {
 
     if (calls.length === 0) {
       const answer = (content.parts || []).map((p) => p.text || '').join('');
-      return { mode: 'gemini', answer, steps };
+      return { mode: 'gemini', answer, steps, spots };
     }
 
     contents.push(content); // 도구 요청을 그대로 이어 붙인다
@@ -71,11 +72,12 @@ async function runGemini(question) {
     for (const { functionCall } of calls) {
       const result = await runTool(functionCall.name, functionCall.args);
       steps.push({ kind: 'find', text: stepText(functionCall.name, functionCall.args, result) });
+      if (functionCall.name === 'find_spots' && result.ok) spots.push(...result.spots);
       responses.push({ functionResponse: { name: functionCall.name, response: { result } } });
     }
     contents.push({ role: 'user', parts: responses });
   }
-  return { mode: 'gemini', answer: '도구를 너무 많이 불러서 멈췄어요. 질문을 조금 더 구체적으로 해 주세요.', steps };
+  return { mode: 'gemini', answer: '도구를 너무 많이 불러서 멈췄어요. 질문을 조금 더 구체적으로 해 주세요.', steps, spots };
 }
 
 // 연습 모드: 키가 없을 때 find_spots → get_weather → 규칙 판단
@@ -100,7 +102,7 @@ async function runPractice(question) {
   steps.push({ kind: 'judge', text: judge });
 
   const list = found.ok ? found.spots.slice(0, 5).map((s) => `- ${s.name} (${s.area}, ${s.indoor ? '실내' : '야외'}, ${s.description})`) : [];
-  return { mode: 'practice', answer: `${judge}\n${list.join('\n') || '조건에 맞는 장소를 찾지 못했어요.'}`, steps };
+  return { mode: 'practice', answer: `${judge}\n${list.join('\n') || '조건에 맞는 장소를 찾지 못했어요.'}`, steps, spots: found.ok ? found.spots : [] };
 }
 
 module.exports = async (req, res) => {
